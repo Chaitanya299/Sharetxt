@@ -48,7 +48,25 @@ Open http://localhost:3000. Production build: `npm run build && npm run start`.
 
 **Upstash Redis** (accessed via the REST client `@upstash/redis`).
 
-Why Redis:
+### Why Upstash Redis (and why not Vercel KV)
+
+The first choice was **Vercel KV** — it's the obvious default when deploying on
+Vercel. On closer look, Vercel KV is itself just Upstash Redis behind a Vercel-branded
+wrapper, and Vercel has since moved KV onto the **Upstash Marketplace integration**
+anyway. Going straight to `@upstash/redis` means:
+
+- One fewer abstraction layer, and env-var names (`UPSTASH_REDIS_REST_URL` /
+  `UPSTASH_REDIS_REST_TOKEN`) that are the same locally and on any host — not tied to
+  Vercel's `KV_*` naming.
+- The exact same capabilities we need: atomic `INCR` and REST transport.
+- The app isn't locked to Vercel's platform primitives, so it runs the same way in
+  local dev.
+
+Full reasoning, including the alternatives that were rejected, is in
+[`docs/decisions/`](docs/decisions/) — see ADR-0002 (persistence choice), ADR-0003
+(deterministic expiry), and ADR-0004 (atomic view counting).
+
+### Why Redis at all
 - **Atomic `INCR`** gives concurrency-safe view counting — under parallel load a paste
   is never served beyond its limit, and remaining-view counts never go negative.
 - **No migrations / no schema** — the app boots and works with just two env vars, so it

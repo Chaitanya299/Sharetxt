@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import ThemeToggle from './theme-toggle';
+
+// Applied before paint so a stored theme choice doesn't flash the wrong colors.
+const themeInit = `try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}`;
 
 const inter = Inter({
   subsets: ['latin'],
@@ -18,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <div className="page">
           {/* Decorative molecular/hex motif — faint, purely aesthetic. */}
           <svg className="bg-decor" viewBox="0 0 560 320" aria-hidden="true">
@@ -40,19 +45,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="topbar">
             <a className="brand" href="/">
               <span className="brand-mark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18">
-                  <path
-                    d="M9 12h6M8.5 8.5H7a4.5 4.5 0 0 0 0 9h1.5M15.5 8.5H17a4.5 4.5 0 0 1 0 9h-1.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                <svg viewBox="0 0 32 32" width="20" height="20">
+                  <g fill="#ffffff">
+                    <rect x="8.5" y="10.1" width="10" height="2.6" rx="1.3" />
+                    <rect x="8.5" y="15" width="15" height="2.6" rx="1.3" fillOpacity="0.9" />
+                    <rect x="8.5" y="19.9" width="11.5" height="2.6" rx="1.3" fillOpacity="0.9" />
+                  </g>
+                  <circle cx="21.6" cy="11.4" r="3.1" fill="#0b2e57" />
+                  <circle cx="21.6" cy="11.4" r="2.5" fill="#7fe0ff" />
                 </svg>
               </span>
               <span className="brand-name">sharetxt</span>
             </a>
-            <span className="brand-badge">Ephemeral by design</span>
+            <div className="topbar-right">
+              <span className="brand-badge">Ephemeral by design</span>
+              <ThemeToggle />
+            </div>
           </header>
 
           {children}

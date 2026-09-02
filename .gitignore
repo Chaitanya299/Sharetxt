@@ -10,6 +10,5 @@ build
 .vercel
 next-env.d.ts
 
-# Local-only working docs and agent config — not for GitHub
-docs/
+# Local-only agent config — not for GitHub
 .claude/

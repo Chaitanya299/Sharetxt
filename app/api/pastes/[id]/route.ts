@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { consumeView, effectiveNow } from '@/lib/redis';
+import type { ErrorResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -8,7 +9,7 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const paste = await consumeView(params.id, effectiveNow(req.headers));
   if (!paste) {
-    return NextResponse.json({ error: 'not found' }, { status: 404 });
+    return NextResponse.json<ErrorResponse>({ error: 'not found' }, { status: 404 });
   }
   return NextResponse.json(paste);
 }

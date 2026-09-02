@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPaste, effectiveNow, baseUrl } from '@/lib/redis';
+import type { CreatePasteResponse, ErrorResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 function badRequest(error: string) {
-  return NextResponse.json({ error }, { status: 400 });
+  return NextResponse.json<ErrorResponse>({ error }, { status: 400 });
 }
 
 export async function POST(req: NextRequest) {
@@ -43,5 +44,5 @@ export async function POST(req: NextRequest) {
 
   const id = await createPaste(content, ttl, maxViews, effectiveNow(req.headers));
   const url = `${baseUrl(req.headers)}/p/${id}`;
-  return NextResponse.json({ id, url }, { status: 201 });
+  return NextResponse.json<CreatePasteResponse>({ id, url }, { status: 201 });
 }

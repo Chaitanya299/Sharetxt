@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import CopyButton from './copy-button';
+import type { CreatePasteRequest, CreatePasteResponse, ErrorResponse } from '@/lib/types';
 
 export default function Home() {
   const [content, setContent] = useState('');
@@ -9,16 +11,14 @@ export default function Home() {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setUrl(null);
-    setCopied(false);
     setBusy(true);
     try {
-      const body: Record<string, unknown> = { content };
+      const body: CreatePasteRequest = { content };
       if (ttl.trim() !== '') body.ttl_seconds = Number(ttl);
       if (maxViews.trim() !== '') body.max_views = Number(maxViews);
 
@@ -27,27 +27,16 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const data: CreatePasteResponse | ErrorResponse = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? 'Something went wrong');
-      } else {
+        setError('error' in data ? data.error : 'Something went wrong');
+      } else if ('url' in data) {
         setUrl(data.url);
       }
     } catch {
       setError('Network error — please try again');
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function copy() {
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable — link is still selectable */
     }
   }
 
@@ -114,13 +103,15 @@ export default function Home() {
               <a className="result-link" href={url}>
                 {url}
               </a>
-              <button type="button" className="copy-btn" onClick={copy}>
-                {copied ? 'Copied' : 'Copy'}
-              </button>
+              <CopyButton text={url} />
             </div>
           </div>
         )}
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error" role="alert">
+            {error}
+          </div>
+        )}
       </section>
 
       <p className="foot">No account. No tracking. Just a link.</p>

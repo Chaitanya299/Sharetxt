@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { peekPaste, effectiveNow } from '@/lib/redis';
+import CopyButton from '../../copy-button';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,6 +19,10 @@ export default async function PastePage({ params }: { params: { id: string } }) 
       <p className="hero-sub">Someone shared this text with you via Sharetxt.</p>
 
       <section className="card">
+        <div className="paste-head">
+          <span className="paste-head-label">Shared text</span>
+          <CopyButton text={content} label="Copy text" />
+        </div>
         <pre className="paste">{content}</pre>
       </section>
 

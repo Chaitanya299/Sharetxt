@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { randomBytes } from 'node:crypto';
+import type { PasteView } from '@/lib/types';
 
 // Lazily-built REST client (UPSTASH_REDIS_REST_URL / _TOKEN). Memoized so we don't
 // rebuild per call, but never constructed at import time — that keeps `next build`
@@ -77,12 +78,6 @@ function isExpired(paste: Stored, now: number): boolean {
 function expiresAtIso(paste: Stored): string | null {
   return paste.expiresAt !== null ? new Date(paste.expiresAt).toISOString() : null;
 }
-
-export type PasteView = {
-  content: string;
-  remaining_views: number | null;
-  expires_at: string | null;
-};
 
 // API fetch: counts as a view. Returns null when unavailable (missing / expired / limit hit).
 export async function consumeView(id: string, now: number): Promise<PasteView | null> {
