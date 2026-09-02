@@ -2,13 +2,18 @@ import { Redis } from '@upstash/redis';
 import { randomBytes } from 'node:crypto';
 import type { PasteView } from '@/lib/types';
 
-// Lazily-built REST client (UPSTASH_REDIS_REST_URL / _TOKEN). Memoized so we don't
-// rebuild per call, but never constructed at import time — that keeps `next build`
-// from needing env vars and avoids throwing during module load. This is a cached
-// connection config, not per-request app state.
+// Lazily-built REST client. Memoized so we don't rebuild per call, but never
+// constructed at import time — that keeps `next build` from needing env vars and
+// avoids throwing during module load. This is a cached connection config, not
+// per-request app state. Reads Upstash's own names (UPSTASH_REDIS_REST_URL/_TOKEN)
+// or Vercel's KV integration names (KV_REST_API_URL/_TOKEN) — same Upstash DB,
+// different labels — so it works whichever set the host injects.
 let _client: Redis | null = null;
 export function getRedis(): Redis {
-  if (!_client) _client = Redis.fromEnv();
+  if (_client) return _client;
+  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+  _client = url && token ? new Redis({ url, token }) : Redis.fromEnv();
   return _client;
 }
 

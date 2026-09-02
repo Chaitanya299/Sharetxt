@@ -34,13 +34,28 @@ Copy the example env file, then fill in your Upstash Redis credentials
 cp .env.example .env.local
 ```
 
-`.env.local` needs these three values:
+`.env.example` mirrors the variables Vercel's Upstash integration injects, so a
+`vercel env pull` and the local file line up:
 
 ```bash
-UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-rest-token
 TEST_MODE=1
+REDIS_URL=
+KV_URL=
+KV_REST_API_READ_ONLY_TOKEN=
+KV_REST_API_TOKEN=
+KV_REST_API_URL=
 ```
+
+The app only needs a REST **URL + read-write token** plus `TEST_MODE`. It reads
+either naming scheme, whichever your host provides:
+
+- **`KV_REST_API_URL` + `KV_REST_API_TOKEN`** — what Vercel's integration sets (above).
+- **`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`** — what the Upstash console
+  gives you directly; set these instead if you're not on Vercel.
+
+The other variables (`REDIS_URL`, `KV_URL`, `KV_REST_API_READ_ONLY_TOKEN`) are unused
+and safe to leave blank — the read-only token can't run `INCR`, so the app ignores it.
+`TEST_MODE=1` is required so the grader's `x-test-now-ms` header drives expiry.
 
 Then start the dev server:
 
@@ -73,15 +88,16 @@ Vercel integration (auto-injected).
 
 1. In your Vercel project → **Storage** tab → **Create Database** → **Upstash for Redis**.
 2. Create and **Connect** it to the project.
-3. Vercel automatically adds `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to the
-   project's environment variables — you don't copy anything by hand. (Then add
-   `TEST_MODE=1` yourself and redeploy.)
+3. Vercel automatically adds a set of env vars to the project — you don't copy anything by
+   hand. (Then add `TEST_MODE=1` yourself and redeploy.)
 
-> The Upstash integration usually injects **several** env vars (a native `REDIS_URL`, a
-> read-only token, `KV_*`-style aliases, etc.) — so you may see 5-6 total. That's normal.
-> This app calls `Redis.fromEnv()`, which reads **only** `UPSTASH_REDIS_REST_URL` and
-> `UPSTASH_REDIS_REST_TOKEN`; combined with `TEST_MODE`, those are the **three** the app
-> actually uses. The rest are unused and safe to leave.
+> The integration injects **several** vars (`KV_REST_API_URL`, `KV_REST_API_TOKEN`,
+> `KV_REST_API_READ_ONLY_TOKEN`, `KV_URL`, `REDIS_URL`) — so with `TEST_MODE` you'll see
+> **six** total, which is what [`.env.example`](.env.example) lists. That's normal. The app
+> uses only the REST **URL + read-write token** (`KV_REST_API_URL` + `KV_REST_API_TOKEN`) —
+> or the equivalent `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` from the console —
+> plus `TEST_MODE`. The rest are unused and safe to leave; the read-only token is ignored
+> because view counting needs `INCR`.
 
 Both options point at the same kind of database; use Option A locally and Option B (or the
 same Option A values) in production.
@@ -140,12 +156,12 @@ Data model (two keys per paste):
 ## Deploy (Vercel)
 
 1. Push this repo to GitHub and import it into Vercel.
-2. Add an **Upstash Redis** database — either from the
-   [Upstash console](https://console.upstash.com) or via the Vercel Marketplace Upstash
-   integration (Storage tab). Copy the **REST URL** and **REST token**.
-3. In the Vercel project's **Environment Variables**, set:
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
+2. Add an **Upstash Redis** database via the Vercel Marketplace Upstash integration
+   (Storage tab) and **Connect** it — this injects the `KV_REST_API_*` credentials
+   automatically. (Or, without the integration, copy the **REST URL + token** from the
+   [Upstash console](https://console.upstash.com) into `UPSTASH_REDIS_REST_URL` /
+   `UPSTASH_REDIS_REST_TOKEN`.)
+3. Add one more Environment Variable by hand:
    - `TEST_MODE=1`  ← required so the grader's `x-test-now-ms` header works.
 4. Deploy. No database migrations or shell access are needed.
 
