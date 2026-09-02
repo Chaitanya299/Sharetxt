@@ -71,6 +71,12 @@ Vercel integration (auto-injected).
    project's environment variables — you don't copy anything by hand. (Then add
    `TEST_MODE=1` yourself and redeploy.)
 
+> The Upstash integration usually injects **several** env vars (a native `REDIS_URL`, a
+> read-only token, `KV_*`-style aliases, etc.) — so you may see 5-6 total. That's normal.
+> This app calls `Redis.fromEnv()`, which reads **only** `UPSTASH_REDIS_REST_URL` and
+> `UPSTASH_REDIS_REST_TOKEN`; combined with `TEST_MODE`, those are the **three** the app
+> actually uses. The rest are unused and safe to leave.
+
 Both options point at the same kind of database; use Option A locally and Option B (or the
 same Option A values) in production.
 
