@@ -27,8 +27,14 @@ Built with **Next.js (App Router, TypeScript)** and **Upstash Redis** for persis
 npm install
 ```
 
-Create a `.env.local` file in the project root with your Upstash Redis credentials
+Copy the example env file, then fill in your Upstash Redis credentials
 (see [Getting Upstash credentials](#getting-upstash-credentials) below):
+
+```bash
+cp .env.example .env.local
+```
+
+`.env.local` needs these three values:
 
 ```bash
 UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
@@ -36,7 +42,7 @@ UPSTASH_REDIS_REST_TOKEN=your-rest-token
 TEST_MODE=1
 ```
 
-Then:
+Then start the dev server:
 
 ```bash
 npm run dev
