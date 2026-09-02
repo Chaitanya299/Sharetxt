@@ -28,7 +28,7 @@ npm install
 ```
 
 Create a `.env.local` file in the project root with your Upstash Redis credentials
-(see [Persistence](#persistence) for where to get them):
+(see [Getting Upstash credentials](#getting-upstash-credentials) below):
 
 ```bash
 UPSTASH_REDIS_REST_URL=https://your-db.upstash.io
@@ -43,6 +43,36 @@ npm run dev
 ```
 
 Open http://localhost:3000. Production build: `npm run build && npm run start`.
+
+## Getting Upstash credentials
+
+You need two values: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Get them
+either from the Upstash console (works everywhere) or, if deploying on Vercel, from the
+Vercel integration (auto-injected).
+
+### Option A — Upstash console (for local dev, or any host)
+
+1. Go to **https://console.upstash.com** and sign up / log in (free, GitHub or Google).
+2. Click **Create Database** → choose **Redis**.
+3. Give it a name, pick a region close to you, keep the **Free** plan, and create it.
+4. Open the database, scroll to the **REST API** section.
+5. Click the **`.env`** tab (or the copy icons) — it shows exactly:
+   ```bash
+   UPSTASH_REDIS_REST_URL="https://xxxx.upstash.io"
+   UPSTASH_REDIS_REST_TOKEN="AxxxxAAIncDx..."
+   ```
+6. Copy both into your `.env.local` (and add `TEST_MODE=1`).
+
+### Option B — Vercel Marketplace integration (for the deployed app)
+
+1. In your Vercel project → **Storage** tab → **Create Database** → **Upstash for Redis**.
+2. Create and **Connect** it to the project.
+3. Vercel automatically adds `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to the
+   project's environment variables — you don't copy anything by hand. (Then add
+   `TEST_MODE=1` yourself and redeploy.)
+
+Both options point at the same kind of database; use Option A locally and Option B (or the
+same Option A values) in production.
 
 ## Persistence
 
