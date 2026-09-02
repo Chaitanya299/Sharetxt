@@ -12,3 +12,6 @@ next-env.d.ts
 
 # Local-only agent config — not for GitHub
 .claude/
+
+# Codex session artifacts
+.context/

@@ -107,27 +107,81 @@ Data model (two keys per paste):
    - `TEST_MODE=1`  ← required so the grader's `x-test-now-ms` header works.
 4. Deploy. No database migrations or shell access are needed.
 
-## Manual verification
+## Testing the API (curl)
+
+All commands are copy-paste runnable against the live deployment. `BASE` is set to the
+deployed URL; change it to `http://localhost:3000` to test locally. The `id` is pulled
+out with `grep`/`cut` so **no `jq` is required**.
+
+> Note: `max_views` counts **API** fetches (`GET /api/pastes/:id`). Opening `/p/:id` in a
+> browser renders the paste but does **not** count — see [Design decisions](#design-decisions).
 
 ```bash
-# Health
-curl -s $BASE/api/healthz                        # {"ok":true}
-
-# Create + fetch
-ID=$(curl -s -XPOST $BASE/api/pastes -H 'content-type: application/json' \
-  -d '{"content":"hello"}' | jq -r .id)
-curl -s $BASE/api/pastes/$ID                     # {"content":"hello",...}
-
-# View limit
-ID=$(curl -s -XPOST $BASE/api/pastes -H 'content-type: application/json' \
-  -d '{"content":"once","max_views":1}' | jq -r .id)
-curl -s -o /dev/null -w '%{http_code}\n' $BASE/api/pastes/$ID   # 200
-curl -s -o /dev/null -w '%{http_code}\n' $BASE/api/pastes/$ID   # 404
-
-# TTL with deterministic time (TEST_MODE=1)
-NOW=$(( $(date +%s) * 1000 ))
-ID=$(curl -s -XPOST $BASE/api/pastes -H 'content-type: application/json' \
-  -H "x-test-now-ms: $NOW" -d '{"content":"ttl","ttl_seconds":60}' | jq -r .id)
-curl -s -o /dev/null -w '%{http_code}\n' -H "x-test-now-ms: $NOW" $BASE/api/pastes/$ID          # 200
-curl -s -o /dev/null -w '%{http_code}\n' -H "x-test-now-ms: $((NOW + 61000))" $BASE/api/pastes/$ID  # 404
+BASE=https://sharetxt-mu.vercel.app
 ```
+
+**Health** — 200 + JSON, reflects the persistence layer:
+
+```bash
+curl -s $BASE/api/healthz            # {"ok":true}
+```
+
+**Create a paste, then fetch it:**
+
+```bash
+ID=$(curl -s -X POST $BASE/api/pastes -H 'content-type: application/json' \
+  -d '{"content":"hello world"}' | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+echo "id: $ID"
+curl -s $BASE/api/pastes/$ID; echo   # {"content":"hello world","remaining_views":null,"expires_at":null}
+```
+
+**View limit — `max_views = 1` → `200`, then `404`:**
+
+```bash
+ID=$(curl -s -X POST $BASE/api/pastes -H 'content-type: application/json' \
+  -d '{"content":"burn once","max_views":1}' | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+curl -s -o /dev/null -w 'fetch 1: %{http_code}\n' $BASE/api/pastes/$ID   # 200
+curl -s -o /dev/null -w 'fetch 2: %{http_code}\n' $BASE/api/pastes/$ID   # 404
+```
+
+**View limit — `max_views = 2` → `200`, `200`, then `404`:**
+
+```bash
+ID=$(curl -s -X POST $BASE/api/pastes -H 'content-type: application/json' \
+  -d '{"content":"two views","max_views":2}' | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+curl -s -o /dev/null -w 'fetch 1: %{http_code}\n' $BASE/api/pastes/$ID   # 200
+curl -s -o /dev/null -w 'fetch 2: %{http_code}\n' $BASE/api/pastes/$ID   # 200
+curl -s -o /dev/null -w 'fetch 3: %{http_code}\n' $BASE/api/pastes/$ID   # 404
+```
+
+**Watch `remaining_views` count down (JSON bodies):**
+
+```bash
+ID=$(curl -s -X POST $BASE/api/pastes -H 'content-type: application/json' \
+  -d '{"content":"count me down","max_views":2}' | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+curl -s $BASE/api/pastes/$ID; echo   # remaining_views: 1
+curl -s $BASE/api/pastes/$ID; echo   # remaining_views: 0
+curl -s $BASE/api/pastes/$ID; echo   # {"error":"not found"}  (404)
+```
+
+**TTL with deterministic time (needs `TEST_MODE=1`):**
+
+```bash
+NOW=$(( $(date +%s) * 1000 ))
+ID=$(curl -s -X POST $BASE/api/pastes -H 'content-type: application/json' \
+  -H "x-test-now-ms: $NOW" -d '{"content":"expires soon","ttl_seconds":60}' \
+  | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+curl -s -o /dev/null -w 'before expiry: %{http_code}\n' -H "x-test-now-ms: $NOW"             $BASE/api/pastes/$ID   # 200
+curl -s -o /dev/null -w 'after  expiry: %{http_code}\n' -H "x-test-now-ms: $((NOW + 61000))" $BASE/api/pastes/$ID   # 404
+```
+
+**Invalid input → `4xx` + JSON error:**
+
+```bash
+curl -s -X POST $BASE/api/pastes -H 'content-type: application/json' -d '{}'; echo
+# {"error":"content is required and must be a non-empty string"}   (400)
+```
+
+---
+
+*by ~ Chaitanya♥️*
